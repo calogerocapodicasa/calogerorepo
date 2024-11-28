@@ -1,33 +1,35 @@
-# Docker
-# Build a Docker image
-# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
-
 trigger:
 - main
-
-resources:
-- repo: self
-
+pool:
+  vmImage: 'ubuntu-latest'
 variables:
-  tag: '$(Build.BuildId)'
-
-stages:
-- stage: Build
-  displayName: Build image
-  jobs:
-  - job: Build
-    displayName: Build
-    pool:
-      vmImage: ubuntu-latest
-    steps:
-    - task: Docker@2
-      displayName: Build an image
-      inputs:
-        command: build
-        dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
-        tags: |
-          $(tag)
-
-    - job: Prisma Cloud image scan
-        id: scan
-        uses: PaloAltoNetworks/prisma-cloud-scan@v1.5
+  PRISMA_CLOUD_URL: 'https://us-east1.cloud.twistlock.com/us-2-158286553'
+  PRISMA_ACCESS_KEY: '66602fab-bab6-4e5f-b702-5e93a282877d'
+  PRISMA_SECRET_KEY: 'yNJCgYdMSyaH9Wenmtj2jvdYqc4='
+  IMAGE_NAME: 'Debian'
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.x'
+    addToPath: true
+# Step 1: Install dependencies
+- script: |
+    sudo apt-get update
+    sudo apt-get install -y jq
+    curl --progress-bar -L -k --header "authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiY2Fsb2dlcm8uY2Fwb2RpY2FzYUBuZXRkYXRhbmV0d29ya3MuY29tIiwicm9sZSI6ImFkbWluIiwicm9sZVBlcm1zIjpbWzI1NSwyNTUsMjU1LDI1NSwyNTUsOTVdLFsyNTUsMjU1LDI1NSwyNTUsMjU1LDk1XV0sInNlc3Npb25UaW1lb3V0U2VjIjo1OTgsInNhYXNUb2tlbiI6ImV5SmhiR2NpT2lKSVV6STFOaUo5LmV5SnpkV0lpT2lKallXeHZaMlZ5Ynk1allYQnZaR2xqWVhOaFFHNWxkR1JoZEdGdVpYUjNiM0pyY3k1amIyMGlMQ0p6WlhKMmFXTmxWWE5oWjJWUGJteDVJanAwY25WbExDSm1hWEp6ZEV4dloybHVJanBtWVd4elpTd2ljSEpwYzIxaFNXUWlPaUk0TURZM056VTBOVGt5TWpNMU9Ua3hNRFFpTENKcGNFRmtaSEpsYzNNaU9pSXpOQzR4TXprdU5qUXVNVFV3SWl3aWFYTnpJam9pYUhSMGNITTZMeTloY0dreUxuQnlhWE50WVdOc2IzVmtMbWx2SWl3aWNtVnpkSEpwWTNRaU9qQXNJblZ6WlhKU2IyeGxWSGx3WlVSbGRHRnBiSE1pT25zaWFHRnpUMjVzZVZKbFlXUkJZMk5sYzNNaU9tWmhiSE5sZlN3aWRYTmxjbEp2YkdWVWVYQmxUbUZ0WlNJNklsTjVjM1JsYlNCQlpHMXBiaUlzSW1selUxTlBVMlZ6YzJsdmJpSTZabUZzYzJVc0lteGhjM1JNYjJkcGJsUnBiV1VpT2pFM016STRNVE00TXpNNE9UZ3NJbUYxWkNJNkltaDBkSEJ6T2k4dllYQnBNaTV3Y21semJXRmpiRzkxWkM1cGJ5SXNJblZ6WlhKU2IyeGxWSGx3WlVsa0lqb3hMQ0poZFhSb0xXMWxkR2h2WkNJNklsQkJUbDlUUVUxTU1pSXNJbk5sYkdWamRHVmtRM1Z6ZEc5dFpYSk9ZVzFsSWpvaVRrVlVSRUZVUVNCRFQweFBUVUpKUVNCVFFWTWdMU0EyTURreU5UUXpOekk1TlRJMk5ESTNPRGM0SWl3aWMyVnpjMmx2YmxScGJXVnZkWFFpT2pZd0xDSjFjMlZ5VW05c1pVbGtJam9pTkRkaE1ERmxOVGN0WXpSbFl5MDBPR1U1TFRsbU56VXRaV0U0Tm1WbE5XVmhNMlEzSWl3aWFHRnpSR1ZtWlc1a1pYSlFaWEp0YVhOemFXOXVjeUk2ZEhKMVpTd2laWGh3SWpveE56TXlPREUwTkRReUxDSnBZWFFpT2pFM016STRNVE00TkRJc0luVnpaWEp1WVcxbElqb2lZMkZzYjJkbGNtOHVZMkZ3YjJScFkyRnpZVUJ1WlhSa1lYUmhibVYwZDI5eWEzTXVZMjl0SWl3aWRYTmxjbEp2YkdWT1lXMWxJam9pUjNKMWNHOWZRbUZ1WTI5c2IyMWlhV0VpZlEuM1dZUEh0MUljd3JncVItdGZZWHdiQ0xFWDRUdEk3RWRJSjBDOExNYWFBNCIsImlzcyI6InR3aXN0bG9jayIsImV4cCI6MTczMjgxNzQ0NH0.24tZ4hxZxQclrZLAN0-4VBhtSd7WNXoYSBzJ6EcKSow" https://us-east1.cloud.twistlock.com/us-2-158286553/api/v1/util/twistcli > twistcli; chmod a+x twistcli;
+    chmod +x twistcli
+  displayName: 'Install dependencies'
+# Step 2: Authenticate to Prisma Cloud
+- script: |
+    echo $PRISMA_SECRET_KEY | ./twistcli images scan \
+    --address $PRISMA_CLOUD_URL \
+    --user $PRISMA_ACCESS_KEY \
+    --password-stdin $IMAGE_NAME
+  displayName: 'Run Prisma Cloud Image Scan'
+# Step 3: Fail the build on scan issues
+- script: |
+    if [ $? -ne 0 ]; then
+      echo "Scan failed. Review the results."
+      exit 1
+    fi
+  displayName: 'Check Scan Results'
